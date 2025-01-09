@@ -1,0 +1,21 @@
+.bulk-operations {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border-radius: 12px;
+}
+
+.operation-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.operation-controls select {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+}

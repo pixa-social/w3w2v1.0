@@ -1,51 +1,35 @@
-import { Redis } from '@upstash/redis'
+import { createClient } from '@upstash/redis'
 
-const redis = new Redis({
+const redis = createClient({
   url: import.meta.env.VITE_KV_REST_API_URL,
   token: import.meta.env.VITE_KV_REST_API_TOKEN,
 })
 
-export async function setRedis(key, value) {
+export const setRedis = async (key, value) => {
   try {
     await redis.set(key, value)
+    return true
   } catch (error) {
-    console.error('Error setting Redis key:', error)
-    throw error
+    console.error('Redis set error:', error)
+    return false
   }
 }
 
-export async function getRedis(key) {
+export const getRedis = async (key) => {
   try {
     return await redis.get(key)
   } catch (error) {
-    console.error('Error getting Redis key:', error)
-    throw error
+    console.error('Redis get error:', error)
+    return null
   }
 }
 
-export async function deleteRedis(key) {
+export const deleteRedis = async (key) => {
   try {
     await redis.del(key)
+    return true
   } catch (error) {
-    console.error('Error deleting Redis key:', error)
-    throw error
-  }
-}
-
-export async function listRedisKeys(pattern = '*') {
-  try {
-    return await redis.keys(pattern)
-  } catch (error) {
-    console.error('Error listing Redis keys:', error)
-    throw error
-  }
-}
-
-export async function flushRedis() {
-  try {
-    await redis.flushdb()
-  } catch (error) {
-    console.error('Error flushing Redis:', error)
-    throw error
+    console.error('Redis delete error:', error)
+    return false
   }
 }

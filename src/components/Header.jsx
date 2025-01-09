@@ -1,55 +1,42 @@
 import { Link } from 'react-router-dom'
 import './Header.css'
-import { useState } from 'react'
+import { XamanAuth } from '../services/xamanAuth'
 
 export default function Header() {
-  const [userType, setUserType] = useState(localStorage.getItem('userType'))
-  const [xrpAddress, setXrpAddress] = useState(localStorage.getItem('xummAccount'))
-
-  const handleLogout = () => {
-    localStorage.removeItem('userType')
-    localStorage.removeItem('xummAccount')
-    setUserType(null)
-    setXrpAddress(null)
-    window.location.href = '/'
-  }
+  const isAuthenticated = XamanAuth.isAuthenticated()
+  const isAdmin = localStorage.getItem('userType') === 'admin'
 
   return (
     <header className="header">
       <div className="container header-container">
         <Link to="/" className="logo">
           <img 
-            src="https://ghostcoin.network/wp-content/uploads/2024/03/bigger-one.png" 
+            src="/src/assets/ghost-logo.png" 
             alt="Ghost Network" 
-            className="logo-img" 
+            className="logo-img"
           />
         </Link>
+
         <nav className="nav">
           <Link to="/" className="nav-link">Home</Link>
           <Link to="/bridge" className="nav-link">Bridge</Link>
-          <Link to="/about" className="nav-link">About</Link>
-          <Link to="/docs" className="nav-link">Docs</Link>
+          <Link to="/files" className="nav-link">Files</Link>
+          {isAdmin && <Link to="/admin" className="nav-link">Admin</Link>}
         </nav>
+
         <div className="header-buttons">
-          {userType ? (
-            <>
-              {userType === 'admin' && (
-                <Link to="/admin-dashboard" className="button button-secondary admin-preview">
-                  Admin Dashboard
-                </Link>
-              )}
-              <Link to="/dashboard" className="button button-secondary">
-                Dashboard
-              </Link>
-              <button 
-                className="button button-secondary logout"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            </>
+          {isAuthenticated ? (
+            <button 
+              onClick={() => {
+                XamanAuth.logout()
+                window.location.href = '/'
+              }}
+              className="button logout"
+            >
+              Logout
+            </button>
           ) : (
-            <Link to="/login" className="button button-secondary">
+            <Link to="/login" className="button button-primary">
               Login
             </Link>
           )}

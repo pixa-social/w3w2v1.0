@@ -1,93 +1,51 @@
-import { PinataSDK } from 'pinata'
+import axios from 'axios'
 
-const pinata = new PinataSDK({
-  pinataJwt: import.meta.env.VITE_PINATA_JWT,
-  pinataGateway: import.meta.env.VITE_PINATA_GATEWAY
-})
+const pinataJWT = import.meta.env.VITE_PINATA_JWT
+const pinataGateway = import.meta.env.VITE_PINATA_GATEWAY
 
-const MAX_RETRIES = 3
-const RETRY_DELAY = 1000 // 1 second
-
-const handleError = (error, operation) => {
-  console.error(`Error during ${operation}:`, error)
-  if (error.response) {
-    console.error('Response Status:', error.response.status)
-    console.error('Response Data:', error.response.data)
-  }
-  throw error
-}
-
-const checkRateLimit = async () => {
+export const pinFileToIPFS = async (file) => {
   try {
-    const rateLimit = await pinata.rateLimit()
-    if (rateLimit.remaining === 0) {
-      console.warn('Rate limit reached. Waiting for reset.')
-      await new Promise(resolve => setTimeout(resolve, rateLimit.reset * 1000))
-    }
-  } catch (error) {
-    handleError(error, 'rate limit check')
-  }
-}
+    const formData = new FormData()
+    formData.append('file', file)
 
-const retryOperation = async (operation, retries = 0) => {
-  try {
-    await checkRateLimit()
-    return await operation()
-  } catch (error) {
-    if (retries < MAX_RETRIES) {
-      console.log(`Retrying ${operation.name} in ${RETRY_DELAY / 1000} seconds...`)
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
-      return retryOperation(operation, retries + 1)
-    }
-    throw error
-  }
-}
-
-export const createPinataGroup = async (groupName) => {
-  const createGroupOperation = async () => {
-    try {
-      const group = await pinata.groups.create({
-        name: groupName,
-        description: `Files for user with XRP address: ${groupName}`
-      })
-      return group
-    } catch (error) {
-      handleError(error, 'Pinata group creation')
-    }
-  }
-  return retryOperation(createGroupOperation)
-}
-
-export const uploadFile = async (file, onProgress) => {
-  const uploadOperation = async () => {
-    try {
-      const response = await pinata.upload.file(file, {
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          )
-          onProgress(percentCompleted)
+    const response = await axios.post(
+      'https://api.pinata.cloud/pinning/pinFileToIPFS',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${pinataJWT}`
         }
-      })
-      return response
-    } catch (error) {
-      handleError(error, 'file upload')
+      }
+    )
+
+    return {
+      success: true,
+      cid: response.data.IpfsHash,
+      gatewayUrl: `${pinataGateway}/ipfs/${response.data.IpfsHash}`
+    }
+  } catch (error) {
+    console.error('Pinata upload error:', error)
+    return {
+      success: false,
+      error: error.message
     }
   }
-  return retryOperation(uploadOperation)
 }
 
-export const getFileUrl = async (cid) => {
-  const getUrlOperation = async () => {
-    try {
-      const url = await pinata.gateways.createSignedURL({
-        cid,
-        expires: 3600 // 1 hour expiration
-      })
-      return url
-    } catch (error) {
-      handleError(error, 'file URL retrieval')
-    }
+export const unpinFromIPFS = async (cid) => {
+  try {
+    await axios.delete(
+      `https://api.pinata.cloud/pinning/unpin/${cid}`,
+      {
+        headers: {
+          Authorization: `Bearer ${pinataJWT}`
+        }
+      }
+    )
+    return true
+  } catch (error) {
+    console.error('Pinata unpin error:', error)
+    return false
   }
-  return retryOperation(getUrlOperation)
 }

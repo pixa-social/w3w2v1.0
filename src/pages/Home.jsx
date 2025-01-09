@@ -1,51 +1,49 @@
 import './Home.css'
 import { Link } from 'react-router-dom'
-import { AuroraBackground } from '../components/ui/AuroraBackground'
 
 export default function Home() {
   return (
-    <AuroraBackground>
-      <div className="home">
-        <section className="hero">
-          <div className="container">
-            <div className="hero-content">
-              <h1 className="hero-title">
-                The Future of <span className="gradient-text">Decentralized</span> Connectivity
-              </h1>
-              <p className="hero-subtitle">
-                Seamlessly bridge Web2 and Web3 ecosystems with Ghost Network
-              </p>
-              <div className="hero-actions">
-                <Link to="/bridge" className="button button-primary">Get Started</Link>
-                <Link to="/login" className="button button-secondary">
-                  <span className="button-text">Login</span>
-                  <span className="button-icon">→</span>
-                </Link>
-              </div>
+    <div className="home">
+      <section className="hero">
+        <div className="container">
+          <div className="hero-content">
+            <h1 className="hero-title">
+              Welcome to <span className="gradient-text">Ghost Network</span>
+            </h1>
+            <p className="hero-subtitle">
+              Decentralized storage solution bridging Web2 and Web3
+            </p>
+            <div className="hero-actions">
+              <Link to="/bridge" className="button button-primary">
+                Get Started
+              </Link>
+              <Link to="/about" className="button button-secondary">
+                Learn More
+              </Link>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="features" className="features">
-          <div className="container">
-            <h2 className="section-title">Why Choose Ghost Network?</h2>
-            <div className="features-grid">
-              <div className="feature-card">
-                <h3>Unmatched Security</h3>
-                <p>Military-grade encryption and decentralized storage ensure your data remains safe and private</p>
-              </div>
-              <div className="feature-card">
-                <h3>Cross-Chain Interoperability</h3>
-                <p>Connect and transact across multiple blockchain networks with ease</p>
-              </div>
-              <div className="feature-card">
-                <h3>Hybrid Storage Solutions</h3>
-                <p>Choose between decentralized and traditional storage options based on your needs</p>
-              </div>
+      <section className="features">
+        <div className="container">
+          <h2 className="section-title">Features</h2>
+          <div className="features-grid">
+            <div className="feature-card">
+              <h3>Decentralized Storage</h3>
+              <p>Store files across multiple decentralized networks</p>
+            </div>
+            <div className="feature-card">
+              <h3>End-to-End Encryption</h3>
+              <p>Military-grade encryption for your files</p>
+            </div>
+            <div className="feature-card">
+              <h3>Cross-Chain Support</h3>
+              <p>Works with multiple blockchain networks</p>
             </div>
           </div>
-        </section>
-      </div>
-    </AuroraBackground>
+        </div>
+      </section>
+    </div>
   )
 }
