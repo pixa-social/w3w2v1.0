@@ -1,7 +1,10 @@
 import './Dashboard.css'
 import { Link } from 'react-router-dom'
+import UserProfile from '../components/UserProfile'
 
 export default function Dashboard() {
+  const xrpAddress = localStorage.getItem('xummAccount')
+
   return (
     <div className="dashboard">
       <section className="dashboard-hero">
@@ -15,6 +18,7 @@ export default function Dashboard() {
 
       <section className="dashboard-content">
         <div className="container">
+          <UserProfile xrpAddress={xrpAddress} />
           <div className="dashboard-grid">
             <div className="dashboard-card">
               <h3>Your Files</h3>

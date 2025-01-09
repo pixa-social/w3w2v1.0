@@ -4,11 +4,13 @@ import { useState } from 'react'
 
 export default function Header() {
   const [userType, setUserType] = useState(localStorage.getItem('userType'))
+  const [xrpAddress, setXrpAddress] = useState(localStorage.getItem('xummAccount'))
 
   const handleLogout = () => {
     localStorage.removeItem('userType')
     localStorage.removeItem('xummAccount')
     setUserType(null)
+    setXrpAddress(null)
     window.location.href = '/'
   }
 
