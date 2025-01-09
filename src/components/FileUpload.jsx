@@ -1,3 +1,4 @@
+```jsx
 import { useState } from 'react'
 import { PinataSDK } from 'pinata'
 import './FileUpload.css'
@@ -50,7 +51,7 @@ export default function FileUpload({ onUploadSuccess }) {
       
       setFile(null)
     } catch (error) {
-      setError(error.message)
+      setError(`Upload failed: ${error.message}`)
     } finally {
       setIsUploading(false)
     }
@@ -87,3 +88,4 @@ export default function FileUpload({ onUploadSuccess }) {
     </div>
   )
 }
+```

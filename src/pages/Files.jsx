@@ -1,16 +1,36 @@
-import { useState } from 'react'
+```jsx
+import { useState, useEffect } from 'react'
 import FileUpload from '../components/FileUpload'
 import FileGallery from '../components/FileGallery'
 import './Files.css'
+import { listRedisKeys, getRedis } from '../utils/redis'
 
 export default function Files() {
   const [uploadedFiles, setUploadedFiles] = useState([])
   const [totalStorageUsed, setTotalStorageUsed] = useState(0)
 
-  const handleUploadSuccess = (fileData) => {
-    setUploadedFiles(prev => [
-      ...prev,
-      {
+  useEffect(() => {
+    const fetchFiles = async () => {
+      try {
+        const fileKeys = await listRedisKeys('file:*')
+        const filePromises = fileKeys.map(async (key) => {
+          const fileData = await getRedis(key)
+          return JSON.parse(fileData)
+        })
+        const fetchedFiles = await Promise.all(filePromises)
+        setUploadedFiles(fetchedFiles)
+        const totalSize = fetchedFiles.reduce((sum, file) => sum + file.size, 0)
+        setTotalStorageUsed(totalSize)
+      } catch (error) {
+        console.error('Error fetching files:', error)
+      }
+    }
+    fetchFiles()
+  }, [])
+
+  const handleUploadSuccess = async (fileData) => {
+    try {
+      const newFile = {
         id: fileData.id,
         name: fileData.name,
         size: fileData.size,
@@ -19,12 +39,21 @@ export default function Files() {
         timestamp: new Date().toLocaleString(),
         type: fileData.type
       }
-    ])
-    setTotalStorageUsed(prev => prev + fileData.size)
+      await setRedis(`file:${newFile.id}`, JSON.stringify(newFile))
+      setUploadedFiles(prev => [...prev, newFile])
+      setTotalStorageUsed(prev => prev + fileData.size)
+    } catch (error) {
+      console.error('Error saving file to Redis:', error)
+    }
   }
 
-  const handleFileDelete = (fileId) => {
-    setUploadedFiles(prev => prev.filter(file => file.id !== fileId))
+  const handleFileDelete = async (fileId) => {
+    try {
+      await deleteRedis(`file:${fileId}`)
+      setUploadedFiles(prev => prev.filter(file => file.id !== fileId))
+    } catch (error) {
+      console.error('Error deleting file:', error)
+    }
   }
 
   return (
@@ -58,3 +87,4 @@ export default function Files() {
     </div>
   )
 }
+```

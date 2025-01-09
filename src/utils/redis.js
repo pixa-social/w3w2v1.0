@@ -1,3 +1,4 @@
+```js
 import { Redis } from '@upstash/redis'
 
 const redis = new Redis({
@@ -6,21 +7,47 @@ const redis = new Redis({
 })
 
 export async function setRedis(key, value) {
-  await redis.set(key, value)
+  try {
+    await redis.set(key, value)
+  } catch (error) {
+    console.error('Error setting Redis key:', error)
+    throw error
+  }
 }
 
 export async function getRedis(key) {
-  return await redis.get(key)
+  try {
+    return await redis.get(key)
+  } catch (error) {
+    console.error('Error getting Redis key:', error)
+    throw error
+  }
 }
 
 export async function deleteRedis(key) {
-  await redis.del(key)
+  try {
+    await redis.del(key)
+  } catch (error) {
+    console.error('Error deleting Redis key:', error)
+    throw error
+  }
 }
 
 export async function listRedisKeys(pattern = '*') {
-  return await redis.keys(pattern)
+  try {
+    return await redis.keys(pattern)
+  } catch (error) {
+    console.error('Error listing Redis keys:', error)
+    throw error
+  }
 }
 
 export async function flushRedis() {
-  await redis.flushdb()
+  try {
+    await redis.flushdb()
+  } catch (error) {
+    console.error('Error flushing Redis:', error)
+    throw error
+  }
 }
+```
