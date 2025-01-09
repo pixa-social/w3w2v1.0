@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react'
-import FileUpload from '../components/FileUpload'
-import FileGallery from '../components/FileGallery'
+import React, { useState, useEffect } from 'react'
+import { PinataSDK } from 'pinata'
+import { setRedis, getRedis, listRedisKeys, deleteRedis } from '../utils/redis'
 import './Files.css'
-import { listRedisKeys, getRedis, setRedis, deleteRedis } from '../utils/redis'
-import { uploadFile, getFileUrl, createPinataGroup } from '../utils/pinata'
+
+const pinata = new PinataSDK({
+  pinataJwt: import.meta.env.VITE_PINATA_JWT,
+  pinataGateway: import.meta.env.VITE_PINATA_GATEWAY
+})
 
 export default function Files() {
-  const [localFiles, setLocalFiles] = useState([])
-  const [pinataFiles, setPinataFiles] = useState([])
-  const [totalStorageUsed, setTotalStorageUsed] = useState(0)
-  const [xrpAddress, setXrpAddress] = useState(localStorage.getItem('xummAccount'))
+  const [files, setFiles] = useState([])
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -20,76 +23,80 @@ export default function Files() {
           return JSON.parse(fileData)
         })
         const fetchedFiles = await Promise.all(filePromises)
-        setLocalFiles(fetchedFiles.filter(file => !file.isStored))
-        setPinataFiles(fetchedFiles.filter(file => file.isStored))
-        const totalSize = fetchedFiles.reduce((sum, file) => sum + file.size, 0)
-        setTotalStorageUsed(totalSize)
+        setFiles(fetchedFiles)
       } catch (error) {
         console.error('Error fetching files:', error)
+        setError('Failed to fetch files')
       }
     }
     fetchFiles()
   }, [])
 
-  useEffect(() => {
-    if (xrpAddress) {
-      createPinataGroup(xrpAddress)
-    }
-  }, [xrpAddress])
-
-  const handleLocalUpload = async (file) => {
-    const newFile = {
-      id: Date.now().toString(),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      url: URL.createObjectURL(file),
-      timestamp: new Date().toLocaleString(),
-      isStored: false
-    }
-    try {
-      await setRedis(`file:${newFile.id}`, JSON.stringify(newFile))
-      setLocalFiles(prev => [...prev, newFile])
-    } catch (error) {
-      console.error('Error saving file to Redis:', error)
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      uploadFile(file)
     }
   }
 
-  const handlePinataUpload = async (fileId) => {
-    const fileToUpload = localFiles.find(file => file.id === fileId)
-    if (!fileToUpload) return
+  const uploadFile = async (file) => {
+    setUploading(true)
+    setError(null)
+    setUploadProgress(0)
 
     try {
-      const response = await uploadFile(fileToUpload, (progress) => {
-        // You might want to show upload progress here
+      // Store file locally in Redis
+      const newFile = {
+        id: Date.now().toString(),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: URL.createObjectURL(file),
+        timestamp: new Date().toLocaleString(),
+        isStored: false
+      }
+      await setRedis(`file:${newFile.id}`, JSON.stringify(newFile))
+      setFiles(prev => [...prev, newFile])
+
+      // Upload to Pinata
+      const response = await pinata.upload.file(file, {
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          )
+          setUploadProgress(percentCompleted)
+        }
       })
-      
-      const url = await getFileUrl(response.cid)
+
+      const url = await pinata.gateways.createSignedURL({
+        cid: response.cid,
+        expires: 3600 // 1 hour expiration
+      })
 
       const updatedFile = {
-        ...fileToUpload,
+        ...newFile,
         cid: response.cid,
         url: url,
         isStored: true
       }
 
-      await setRedis(`file:${fileId}`, JSON.stringify(updatedFile))
-      setLocalFiles(prev => prev.map(file => file.id === fileId ? updatedFile : file))
-      setPinataFiles(prev => [...prev, updatedFile])
-      setTotalStorageUsed(prev => prev + fileToUpload.size)
+      await setRedis(`file:${newFile.id}`, JSON.stringify(updatedFile))
+      setFiles(prev => prev.map(file => file.id === newFile.id ? updatedFile : file))
     } catch (error) {
-      console.error('Error uploading to Pinata:', error)
-      // Handle error, maybe show a message to the user
+      console.error('Error uploading file:', error)
+      setError('Failed to upload file')
+    } finally {
+      setUploading(false)
     }
   }
 
   const handleFileDelete = async (fileId) => {
     try {
       await deleteRedis(`file:${fileId}`)
-      setLocalFiles(prev => prev.filter(file => file.id !== fileId))
-      setPinataFiles(prev => prev.filter(file => file.id !== fileId))
+      setFiles(prev => prev.filter(file => file.id !== fileId))
     } catch (error) {
       console.error('Error deleting file:', error)
+      setError('Failed to delete file')
     }
   }
 
@@ -108,17 +115,54 @@ export default function Files() {
         <div className="container">
           <div className="file-upload-section">
             <h2>Upload a File</h2>
-            <FileUpload onUploadSuccess={handleLocalUpload} />
+            <input 
+              type="file"
+              id="file-upload"
+              onChange={handleFileChange}
+              disabled={uploading}
+            />
+            {uploading && (
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ width: `${uploadProgress}%` }}></div>
+              </div>
+            )}
+            {error && <div className="error-message">{error}</div>}
           </div>
 
           <div className="file-management">
             <h2>Your Files</h2>
-            <FileGallery 
-              files={[...localFiles, ...pinataFiles]} 
-              totalStorageUsed={totalStorageUsed} 
-              onDelete={handleFileDelete}
-              onPinataUpload={handlePinataUpload}
-            />
+            <div className="gallery-grid">
+              {files.map(file => (
+                <div key={file.id} className={`gallery-item ${file.isStored ? 'web3' : 'web2'}`}>
+                  <div className="file-preview">
+                    {file.type.startsWith('image/') ? (
+                      <img src={file.url} alt={file.name} />
+                    ) : (
+                      <div className="file-icon">{file.name.slice(-3).toUpperCase()}</div>
+                    )}
+                  </div>
+                  <div className="file-details">
+                    <h3>{file.name}</h3>
+                    <p>{(file.size / 1024).toFixed(2)} KB</p>
+                    <p>Uploaded: {file.timestamp}</p>
+                    <p>Storage: {file.isStored ? 'Web3 (Pinata)' : 'Web2 (Local)'}</p>
+                    {file.isStored && (
+                      <p>
+                        <strong>CID:</strong> {file.cid}
+                      </p>
+                    )}
+                  </div>
+                  <div className="file-actions">
+                    <button 
+                      className="button button-secondary"
+                      onClick={() => handleFileDelete(file.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
