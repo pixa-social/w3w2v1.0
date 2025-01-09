@@ -1,4 +1,3 @@
-```jsx
 import React from 'react'
 import './FileGallery.css'
 
@@ -55,4 +54,3 @@ export default function FileGallery({ files, totalStorageUsed, onDelete, onPinat
     </div>
   )
 }
-```

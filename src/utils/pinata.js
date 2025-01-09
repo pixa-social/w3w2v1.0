@@ -1,4 +1,3 @@
-```js
 import { PinataSDK } from 'pinata'
 
 const pinata = new PinataSDK({
@@ -44,6 +43,21 @@ const retryOperation = async (operation, retries = 0) => {
   }
 }
 
+export const createPinataGroup = async (groupName) => {
+  const createGroupOperation = async () => {
+    try {
+      const group = await pinata.groups.create({
+        name: groupName,
+        description: `Files for user with XRP address: ${groupName}`
+      })
+      return group
+    } catch (error) {
+      handleError(error, 'Pinata group creation')
+    }
+  }
+  return retryOperation(createGroupOperation)
+}
+
 export const uploadFile = async (file, onProgress) => {
   const uploadOperation = async () => {
     try {
@@ -77,4 +91,3 @@ export const getFileUrl = async (cid) => {
   }
   return retryOperation(getUrlOperation)
 }
-```

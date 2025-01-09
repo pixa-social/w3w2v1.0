@@ -1,4 +1,3 @@
-```jsx
 import { useState } from 'react'
 import './FileUpload.css'
 
@@ -42,4 +41,3 @@ export default function FileUpload({ onUploadSuccess }) {
     </div>
   )
 }
-```

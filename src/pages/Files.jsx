@@ -1,15 +1,15 @@
-```jsx
 import { useState, useEffect } from 'react'
 import FileUpload from '../components/FileUpload'
 import FileGallery from '../components/FileGallery'
 import './Files.css'
 import { listRedisKeys, getRedis, setRedis, deleteRedis } from '../utils/redis'
-import { uploadFile, getFileUrl } from '../utils/pinata'
+import { uploadFile, getFileUrl, createPinataGroup } from '../utils/pinata'
 
 export default function Files() {
   const [localFiles, setLocalFiles] = useState([])
   const [pinataFiles, setPinataFiles] = useState([])
   const [totalStorageUsed, setTotalStorageUsed] = useState(0)
+  const [xrpAddress, setXrpAddress] = useState(localStorage.getItem('xummAccount'))
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -30,6 +30,12 @@ export default function Files() {
     }
     fetchFiles()
   }, [])
+
+  useEffect(() => {
+    if (xrpAddress) {
+      createPinataGroup(xrpAddress)
+    }
+  }, [xrpAddress])
 
   const handleLocalUpload = async (file) => {
     const newFile = {
@@ -119,4 +125,3 @@ export default function Files() {
     </div>
   )
 }
-```
