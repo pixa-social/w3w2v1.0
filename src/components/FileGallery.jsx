@@ -1,7 +1,12 @@
+```jsx
 import React from 'react'
 import './FileGallery.css'
 
-export default function FileGallery({ files, totalStorageUsed, onDelete }) {
+export default function FileGallery({ files, totalStorageUsed, onDelete, onPinataUpload }) {
+  const getStorageType = (file) => {
+    return file.isStored ? 'Web3 (Pinata)' : 'Web2 (Local)'
+  }
+
   return (
     <div className="file-gallery">
       <div className="storage-usage">
@@ -9,7 +14,7 @@ export default function FileGallery({ files, totalStorageUsed, onDelete }) {
       </div>
       <div className="gallery-grid">
         {files.map(file => (
-          <div key={file.id} className="gallery-item">
+          <div key={file.id} className={`gallery-item ${file.isStored ? 'web3' : 'web2'}`}>
             <div className="file-preview">
               {file.type.startsWith('image/') ? (
                 <img src={file.url} alt={file.name} />
@@ -21,22 +26,22 @@ export default function FileGallery({ files, totalStorageUsed, onDelete }) {
               <h3>{file.name}</h3>
               <p>{(file.size / 1024).toFixed(2)} KB</p>
               <p>Uploaded: {file.timestamp}</p>
+              <p>Storage: {getStorageType(file)}</p>
+              {file.isStored && (
+                <p>
+                  <strong>CID:</strong> {file.cid}
+                </p>
+              )}
             </div>
             <div className="file-actions">
-              <a
-                href={file.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="button button-secondary"
-              >
-                View
-              </a>
-              <button 
-                className="button button-secondary"
-                onClick={() => navigator.clipboard.writeText(file.cid)}
-              >
-                Copy CID
-              </button>
+              {!file.isStored && (
+                <button 
+                  className="button button-secondary"
+                  onClick={() => onPinataUpload(file.id)}
+                >
+                  Store on Pinata
+                </button>
+              )}
               <button 
                 className="button button-secondary"
                 onClick={() => onDelete(file.id)}
@@ -50,3 +55,4 @@ export default function FileGallery({ files, totalStorageUsed, onDelete }) {
     </div>
   )
 }
+```

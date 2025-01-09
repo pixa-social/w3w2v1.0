@@ -1,3 +1,4 @@
+```css
 .file-gallery {
   margin-top: 2rem;
 }
@@ -26,6 +27,14 @@
 
 .gallery-item:hover {
   transform: translateY(-5px);
+}
+
+.gallery-item.web3 {
+  border: 2px solid var(--primary);
+}
+
+.gallery-item.web2 {
+  border: 2px solid var(--text-secondary);
 }
 
 .file-preview {
@@ -70,3 +79,4 @@
   gap: 0.5rem;
   margin-top: auto;
 }
+```

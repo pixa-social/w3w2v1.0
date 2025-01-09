@@ -3,10 +3,12 @@ import { useState, useEffect } from 'react'
 import FileUpload from '../components/FileUpload'
 import FileGallery from '../components/FileGallery'
 import './Files.css'
-import { listRedisKeys, getRedis } from '../utils/redis'
+import { listRedisKeys, getRedis, setRedis, deleteRedis } from '../utils/redis'
+import { uploadFile, getFileUrl } from '../utils/pinata'
 
 export default function Files() {
-  const [uploadedFiles, setUploadedFiles] = useState([])
+  const [localFiles, setLocalFiles] = useState([])
+  const [pinataFiles, setPinataFiles] = useState([])
   const [totalStorageUsed, setTotalStorageUsed] = useState(0)
 
   useEffect(() => {
@@ -18,7 +20,8 @@ export default function Files() {
           return JSON.parse(fileData)
         })
         const fetchedFiles = await Promise.all(filePromises)
-        setUploadedFiles(fetchedFiles)
+        setLocalFiles(fetchedFiles.filter(file => !file.isStored))
+        setPinataFiles(fetchedFiles.filter(file => file.isStored))
         const totalSize = fetchedFiles.reduce((sum, file) => sum + file.size, 0)
         setTotalStorageUsed(totalSize)
       } catch (error) {
@@ -28,29 +31,57 @@ export default function Files() {
     fetchFiles()
   }, [])
 
-  const handleUploadSuccess = async (fileData) => {
+  const handleLocalUpload = async (file) => {
+    const newFile = {
+      id: Date.now().toString(),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: URL.createObjectURL(file),
+      timestamp: new Date().toLocaleString(),
+      isStored: false
+    }
     try {
-      const newFile = {
-        id: fileData.id,
-        name: fileData.name,
-        size: fileData.size,
-        cid: fileData.cid,
-        url: fileData.url,
-        timestamp: new Date().toLocaleString(),
-        type: fileData.type
-      }
       await setRedis(`file:${newFile.id}`, JSON.stringify(newFile))
-      setUploadedFiles(prev => [...prev, newFile])
-      setTotalStorageUsed(prev => prev + fileData.size)
+      setLocalFiles(prev => [...prev, newFile])
     } catch (error) {
       console.error('Error saving file to Redis:', error)
+    }
+  }
+
+  const handlePinataUpload = async (fileId) => {
+    const fileToUpload = localFiles.find(file => file.id === fileId)
+    if (!fileToUpload) return
+
+    try {
+      const response = await uploadFile(fileToUpload, (progress) => {
+        // You might want to show upload progress here
+      })
+      
+      const url = await getFileUrl(response.cid)
+
+      const updatedFile = {
+        ...fileToUpload,
+        cid: response.cid,
+        url: url,
+        isStored: true
+      }
+
+      await setRedis(`file:${fileId}`, JSON.stringify(updatedFile))
+      setLocalFiles(prev => prev.map(file => file.id === fileId ? updatedFile : file))
+      setPinataFiles(prev => [...prev, updatedFile])
+      setTotalStorageUsed(prev => prev + fileToUpload.size)
+    } catch (error) {
+      console.error('Error uploading to Pinata:', error)
+      // Handle error, maybe show a message to the user
     }
   }
 
   const handleFileDelete = async (fileId) => {
     try {
       await deleteRedis(`file:${fileId}`)
-      setUploadedFiles(prev => prev.filter(file => file.id !== fileId))
+      setLocalFiles(prev => prev.filter(file => file.id !== fileId))
+      setPinataFiles(prev => prev.filter(file => file.id !== fileId))
     } catch (error) {
       console.error('Error deleting file:', error)
     }
@@ -71,15 +102,16 @@ export default function Files() {
         <div className="container">
           <div className="file-upload-section">
             <h2>Upload a File</h2>
-            <FileUpload onUploadSuccess={handleUploadSuccess} />
+            <FileUpload onUploadSuccess={handleLocalUpload} />
           </div>
 
           <div className="file-management">
             <h2>Your Files</h2>
             <FileGallery 
-              files={uploadedFiles} 
+              files={[...localFiles, ...pinataFiles]} 
               totalStorageUsed={totalStorageUsed} 
               onDelete={handleFileDelete}
+              onPinataUpload={handlePinataUpload}
             />
           </div>
         </div>
