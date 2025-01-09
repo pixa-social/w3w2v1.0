@@ -1,6 +1,7 @@
 import './Dashboard.css'
 import { Link } from 'react-router-dom'
 import UserProfile from '../components/UserProfile'
+import { FocusCardsDemo } from '../components/ui/FocusCards'
 
 export default function Dashboard() {
   const xrpAddress = localStorage.getItem('xummAccount')
@@ -35,6 +36,10 @@ export default function Dashboard() {
               <p>Configure your wallet, manage API keys, and customize your experience.</p>
               <Link to="/settings" className="button button-primary">Settings</Link>
             </div>
+          </div>
+          <div className="user-gallery">
+            <h2>User Gallery</h2>
+            <FocusCardsDemo />
           </div>
         </div>
       </section>

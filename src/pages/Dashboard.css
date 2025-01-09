@@ -52,3 +52,13 @@
   color: var(--text-secondary);
   margin-bottom: 1.5rem;
 }
+
+.user-gallery {
+  margin-top: 4rem;
+}
+
+.user-gallery h2 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
