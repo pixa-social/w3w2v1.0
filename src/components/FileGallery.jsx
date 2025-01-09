@@ -1,7 +1,7 @@
 import React from 'react'
 import './FileGallery.css'
 
-export default function FileGallery({ files, totalStorageUsed }) {
+export default function FileGallery({ files, totalStorageUsed, onDelete }) {
   return (
     <div className="file-gallery">
       <div className="storage-usage">
@@ -36,6 +36,12 @@ export default function FileGallery({ files, totalStorageUsed }) {
                 onClick={() => navigator.clipboard.writeText(file.cid)}
               >
                 Copy CID
+              </button>
+              <button 
+                className="button button-secondary"
+                onClick={() => onDelete(file.id)}
+              >
+                Delete
               </button>
             </div>
           </div>

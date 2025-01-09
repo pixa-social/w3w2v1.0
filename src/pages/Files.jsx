@@ -23,6 +23,10 @@ export default function Files() {
     setTotalStorageUsed(prev => prev + fileData.size)
   }
 
+  const handleFileDelete = (fileId) => {
+    setUploadedFiles(prev => prev.filter(file => file.id !== fileId))
+  }
+
   return (
     <div className="files-page">
       <section className="files-hero">
@@ -43,7 +47,11 @@ export default function Files() {
 
           <div className="file-management">
             <h2>Your Files</h2>
-            <FileGallery files={uploadedFiles} totalStorageUsed={totalStorageUsed} />
+            <FileGallery 
+              files={uploadedFiles} 
+              totalStorageUsed={totalStorageUsed} 
+              onDelete={handleFileDelete}
+            />
           </div>
         </div>
       </section>

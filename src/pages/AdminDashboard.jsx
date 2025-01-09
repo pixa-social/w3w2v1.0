@@ -1,31 +1,40 @@
 import './AdminDashboard.css'
-import { useState } from 'react'
-
-// Mock user data
-const mockUsers = [
-  { id: 1, xrpAddress: 'r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59', storageUsed: 1024 * 1024, storageLimit: 1024 * 1024 * 10 },
-  { id: 2, xrpAddress: 'r3kmLJN5D28dHuH8vZNUZpMC43pEHpaocV', storageUsed: 512 * 1024, storageLimit: 1024 * 1024 * 5 },
-  // Add more mock users as needed
-]
+import { useState, useEffect } from 'react'
+import { listRedisKeys, getRedis } from '../utils/redis'
 
 export default function AdminDashboard() {
-  const [users, setUsers] = useState(mockUsers)
+  const [users, setUsers] = useState([])
   const [newStorageLimit, setNewStorageLimit] = useState('')
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const userKeys = await listRedisKeys('user:*')
+      const userPromises = userKeys.map(async (key) => {
+        const userData = await getRedis(key)
+        return JSON.parse(userData)
+      })
+      const fetchedUsers = await Promise.all(userPromises)
+      setUsers(fetchedUsers)
+    }
+    fetchUsers()
+  }, [])
 
   const handleStorageLimitChange = (e, userId) => {
     setNewStorageLimit(e.target.value)
   }
 
-  const adjustStorageLimit = (userId) => {
-    setUsers(users.map(user => 
-      user.id === userId 
-        ? { ...user, storageLimit: parseInt(newStorageLimit) * 1024 * 1024 } 
-        : user
-    ))
+  const adjustStorageLimit = async (userId) => {
+    const user = users.find(user => user.id === userId)
+    if (user) {
+      user.storageLimit = parseInt(newStorageLimit) * 1024 * 1024
+      await setRedis(`user:${userId}`, JSON.stringify(user))
+      setUsers(users.map(u => u.id === userId ? user : u))
+    }
     setNewStorageLimit('')
   }
 
-  const deleteUser = (userId) => {
+  const deleteUser = async (userId) => {
+    await deleteRedis(`user:${userId}`)
     setUsers(users.filter(user => user.id !== userId))
   }
 

@@ -17,14 +17,6 @@ export async function deleteRedis(key) {
   await redis.del(key)
 }
 
-export async function incrementRedis(key) {
-  return await redis.incr(key)
-}
-
-export async function decrementRedis(key) {
-  return await redis.decr(key)
-}
-
 export async function listRedisKeys(pattern = '*') {
   return await redis.keys(pattern)
 }
