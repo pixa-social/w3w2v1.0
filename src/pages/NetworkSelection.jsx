@@ -17,7 +17,7 @@ export default function NetworkSelection() {
         const script = document.createElement('script')
         script.src = 'https://xumm.app/assets/cdn/xumm.min.js'
         script.onload = () => {
-          const xummInstance = new Xumm('c3343fcb-bc0d-42b8-a678-7478a48db43d')
+          const xummInstance = new Xumm('67a2aa88-eb11-4f8e-8bf6-15e829cb254e', '2fbdfe66-2c4c-4974-bc83-00356b901477')
           setXumm(xummInstance)
 
           // Handle successful login
